@@ -137,8 +137,6 @@ class xwm:
         self.screen = self.display.screen()
         self.root = self.display.screen().root
         #
-        self.WM_PROTOCOLS = self.display.intern_atom('WM_PROTOCOLS')
-        self.WM_DELETE_WINDOW = self.display.intern_atom('WM_DELETE_WINDOW')
         self.NET_WM_NAME = self.display.intern_atom('_NET_WM_NAME')
         self.WM_NAME = self.display.intern_atom('WM_NAME')
         
