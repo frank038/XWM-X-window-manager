@@ -15,7 +15,7 @@ Very minimal:
 - close button (the red one)
 - maximize button (the green one)
 - window moving (from the titlebar)
-- window resizing (click in the bottom right corner of the window, if the pointer change just drag)
+- window resizing (click in the bottom right corner of the window; if the pointer change, just drag)
 - menu (right click in the background; two options: execute xterm or exit from the wm)
 - dock on top right:
     - right click in the text XWM to bring it to top
