@@ -5,7 +5,7 @@ Free to use or modify
 
 Requires:
 - python3
-- xlib
+- python3-xlib
 - python3-ewmh
 - xdotool
 - xterm
