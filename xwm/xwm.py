@@ -493,6 +493,14 @@ class xwm:
             event = self.root.display.next_event()
             
             if event.type == X.MapNotify:
+                
+                attrs = event.window.get_attributes()
+                if attrs is None:
+                    continue
+                # not to be managed by window manager
+                if attrs.override_redirect:
+                    continue
+                
                 # skip the dock
                 if event.window == self._dock:
                     continue
