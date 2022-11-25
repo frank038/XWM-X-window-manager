@@ -24,4 +24,10 @@ Very minimal:
 
 Because this wm is minimal, many things are left out, and maybe never will be implemented.
 
+To test this wm:
+- from a terminal: Xephyr :1 -screen 1366x768
+- from another terminal: DISPLAY=: xterm &
+- launch the wm from that terminal
+- or just execut it as any other wm.
+
 ![My image](https://github.com/frank038/XWM-X-window-manager-/blob/main/screenshot.png)
