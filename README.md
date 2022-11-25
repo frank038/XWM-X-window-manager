@@ -12,8 +12,8 @@ Requires:
 - xfonts (font lucida is used)
 
 Very minimal:
-- close button
-- maximize button
+- close button (the red one)
+- maximize button (the green one)
 - window moving (from the titlebar)
 - window resizing (click in the bottom right corner of the window, if the pointer change just drag)
 - menu (right click in the background; two options: execute xterm or exit from the wm)
@@ -22,7 +22,7 @@ Very minimal:
     - left click in an item (if any) to bring that window on top
     - right click in an item (if any) to have a kind of minimization, or restore it to top
 
-Because this wm is minimal, many things are left out, and maybe never will be implemented.
+Because this wm is minimal, many things are left out, and maybe never will be implemented. This wm has no options, unless changing the code (mostly unsupported).
 
 No docks can interoperate with the wm.
 
