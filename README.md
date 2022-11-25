@@ -24,4 +24,4 @@ Very minimal:
 
 Because this wm is minimal, many things are left out, and maybe never will be implemented.
 
-
+![My image](https://github.com/frank038/XWM-X-window-manager-/blob/main/screenshot.png)
