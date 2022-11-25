@@ -28,6 +28,8 @@ Because this wm is minimal, many things are left out, and maybe never will be im
 
 No docks can interoperate with the wm.
 
+No keybindings.
+
 To test this wm:
 - from a terminal: Xephyr :1 -screen 1366x768
 - from another terminal: DISPLAY=: xterm &
