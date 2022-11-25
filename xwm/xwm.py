@@ -423,7 +423,7 @@ class xwm:
                 pass
         else:
             try:
-                ret = os.system("xdotool windowclose {}".format(self.wwid.id))
+                ret = os.system("xdotool windowclose {}".format(win.id))
                 if ret != 0:
                     ret = os.system("xdotool windowkill {}".format(win.id))
                     if ret != 0:
