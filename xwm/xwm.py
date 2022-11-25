@@ -409,7 +409,11 @@ class xwm:
     
     # close window
     def close_window(self, win):
-        winPid = ewmh.getWmPid(win)
+        winPid = None
+        try:
+            winPid = ewmh.getWmPid(win)
+        except:
+            pass
         if winPid:
             try:
                 # 9 signal.SIGKILL - 15 signal.SIGTERM
@@ -570,7 +574,7 @@ class xwm:
                 event.window.raise_window()
                 event.window.map()
                 #
-                self.refresh_title(window, deco)
+                self.refresh_title(event.window, deco)
                 #
             #
             # first unmap then destroy eventually
