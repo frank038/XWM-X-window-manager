@@ -24,7 +24,7 @@ Very minimal:
 - splash windows are undecorated
 - etc.
 
-Because this wm is minimal, many things are left out, and maybe never will be implemented. This wm has no options, unless changing the code (mostly unsupported).
+Because this wm is minimal, many things are left out, and maybe never will be implemented. This wm has no options, unless changing the options in the code (mostly unsupported).
 
 Not any other docks can interoperate with the wm.
 
