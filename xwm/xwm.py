@@ -15,9 +15,6 @@ ewmh = EWMH()
 LEFT_PTR = Xcursorfont.left_ptr
 RIGHT_CORNER_BOTTOM = Xcursorfont.bottom_right_corner
 
-from ewmh import EWMH
-ewmh = EWMH()
-
 _display = Display()
 
 MAIN_DOCK_HEIGHT = 0
