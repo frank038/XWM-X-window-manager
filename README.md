@@ -33,7 +33,7 @@ No keybindings. No virtual desktops.
 To test this wm:
 - from a terminal: Xephyr :1 -screen 1366x768
 - from another terminal: DISPLAY=:1 xterm &
-- launch the wm from that terminal
+- launch the wm from that xterm
 - or just execut it as any wm.
 
 ![My image](https://github.com/frank038/XWM-X-window-manager-/blob/main/screenshot.png)
