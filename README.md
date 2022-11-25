@@ -21,6 +21,8 @@ Very minimal:
     - click in the text XWM to bring it to top
     - left click in an item (if any) to bring that window on top
     - right click in an item (if any) to have a kind of minimization, or restore it to top
+- splash windows are undecorated
+- etc.
 
 Because this wm is minimal, many things are left out, and maybe never will be implemented. This wm has no options, unless changing the code (mostly unsupported).
 
