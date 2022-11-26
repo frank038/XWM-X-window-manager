@@ -128,9 +128,7 @@ else:
     mask_deco = X.EnterWindowMask | X.LeaveWindowMask
 
 
-###################
-
-
+####
 class xwm:
     
     def __init__(self):
@@ -139,20 +137,16 @@ class xwm:
         self.screen = self.display.screen()
         self.root = self.display.screen().root
         #
-        self.NET_WM_STATE = self.display.intern_atom("_NET_WM_STATE")
-        # 
-        self.NET_STATE = self.display.intern_atom("_NET_STATE")
         self.NET_WM_NAME = self.display.intern_atom('_NET_WM_NAME')
         self.WM_NAME = self.display.intern_atom('WM_NAME')
-        self.WM_FULLSCREEN = self.display.intern_atom("_NET_WM_STATE_FULLSCREEN")
-        #
+        
         mask = (X.SubstructureRedirectMask | X.SubstructureNotifyMask
                 | X.EnterWindowMask | X.LeaveWindowMask | X.FocusChangeMask
                 | X.ButtonPressMask | X.ButtonReleaseMask 
                 | X.KeyPressMask | X.KeyReleaseMask)
         
         self.root.change_attributes(event_mask=mask)
-        #
+        
         # window move event
         self.mouse_button_left = 0
         self.delta_drag_start_point = None
@@ -168,7 +162,6 @@ class xwm:
         self.window_maximized = 0
         # only one can be in this state
         self.window_in_fullscreen_state = None
-        self.window_in_fullscreen_state_CM = None
         #
         # create the wm dock
         self._dock = None
@@ -183,19 +176,20 @@ class xwm:
         #
         self.main_loop()
     
+    
     # the menu
     def _menu(self, x, y):
         mwidth = 200
         mheight = 100
         mx = x
         my = y
-        #
+        
         if mx + mwidth > screen_width_usable:
             mx = screen_width_usable - mwidth - 2
-        #
+        
         if my + mheight > screen_height_usable:
             my = screen_height_usable - mheight - 2
-        #
+        
         self._m = self.screen.root.create_window(
             mx,
             my,
@@ -248,13 +242,14 @@ class xwm:
         if len_items:
             self.dock_height += 50 * len_items
             self._dock.configure(width=dock_width, height=self.dock_height)
-        #
+        # 
         font = self.display.open_font(TITLE_FONT)
         self.on_dock_items_f(len_items, self.dock_items)
     
     def on_dock_items_f(self, len_items, temp_list):
         font = self.display.open_font(TITLE_FONT)
         item_gc = self._dock.create_gc(font=font, foreground=dock_border_color, line_width=1)
+        # 
         i = 0
         for k,v in temp_list.items():
             item_name = self.get_window_class(k)
@@ -292,9 +287,7 @@ class xwm:
     def dock_content(self):
         # inner border
         dock_gc = self._dock.create_gc(foreground=dock_border_color, line_width=3)
-        # in gc x e y sono relativi alla finestra
         self._dock.rectangle(dock_gc, 4, 4, dock_width-9, dock_height-9)
-        #
         font2 = self.display.open_font(DOCK_FONT)
         fq2 = font2.query_text_extents(b"XWM")
         name_width = fq2._data['overall_left'] + fq2._data['overall_right']
@@ -438,8 +431,9 @@ class xwm:
     
     # maximize the window
     def maximize_window(self, deco):
+        # return
         win = self.find_win_of_deco(deco)
-        #
+        # 
         if not win in MAXIMIZED_WINDOWS:
             wgeom = win.get_geometry()
             MAXIMIZED_WINDOWS[win] = [win, wgeom.x, wgeom.y, wgeom.width, wgeom.height]
@@ -465,7 +459,6 @@ class xwm:
             deco.configure(x=x-BORDER_WIDTH,y=y-TITLE_HEIGHT,
                 width=width+BORDER_WIDTH*2, height=height+TITLE_HEIGHT+BORDER_WIDTH)
             win.configure(x=x,y=y,width=width,height=height)
-            #
             del MAXIMIZED_WINDOWS[win]
             # refresh the title
             self.refresh_title(win, deco)
@@ -480,7 +473,6 @@ class xwm:
         #
         return win
     
-    
     def refresh_title(self, win, deco):
         if not win:
             return
@@ -490,10 +482,9 @@ class xwm:
             return
         if win == self._m or deco == self._m:
             return
-        #
+        # 
         win_name = self.get_window_class(win)
         self.win_deco_title(deco, win_name)
-    
     
     def main_loop(self):
         global active_window
@@ -506,17 +497,18 @@ class xwm:
                 attrs = event.window.get_attributes()
                 if attrs is None:
                     continue
-                #
                 # not to be managed by window manager
                 if attrs.override_redirect:
                     continue
+                
                 # skip the dock
                 if event.window == self._dock:
                     continue
+                
                 # skip the menu
                 if event.window == self._m:
                     continue
-                #
+                
                 if event.window in all_windows:
                     continue
                 if event.window in all_windows_stack:
@@ -530,30 +522,31 @@ class xwm:
                     continue
                 if is_found:
                     continue
-                #
                 all_windows.append(event.window)
                 all_windows_stack.append(event.window)
                 #
                 if not event.window in self.dock_items:
                     self.dock_items[event.window] = [0]
                     self.on_dock_items()
-                #
+                
                 # set the active window
                 if event.window in DECO_WIN:
+                    # global active_window
                     active_window = event.window
-            
+        
             #
             elif event.type == X.MapRequest:
-                #
+                
                 attrs = event.window.get_attributes()
                 if attrs is None:
                     continue
                 # not to be managed by window manager
                 if attrs.override_redirect:
                     continue
+                    
                 # windows that do not need decoration
                 ew_type = ewmh.getWmWindowType(event.window, str=True)
-                #
+                
                 if ew_type and ew_type[0] in WINDOW_WITH_NO_DECO:
                     continue
                 #
@@ -579,10 +572,10 @@ class xwm:
                 event.window.raise_window()
                 event.window.map()
                 #
-                # deco must be mapped
                 self.refresh_title(event.window, deco)
-            
+                #
             #
+            # first unmap then destroy eventually
             elif event.type == X.DestroyNotify:
                 if event.window in DECO_WIN:
                     DECO_WIN[event.window].destroy()
@@ -595,7 +588,6 @@ class xwm:
                     #
                     if active_window == event.window:
                         active_window = None
-                        # find another suitable window to set as active
                         if len(all_windows_stack) > 0:
                             iitem = all_windows_stack[-1]
                             if iitem not in dock_windows and iitem != desktop_window:
@@ -618,36 +610,11 @@ class xwm:
                 x, y = event.x, event.y
                 width, height = event.width, event.height
                 mask = event.value_mask
-                #
+                # 
                 if mask in [0b1111,0b1100,0b0011,0b01000000]:
-                    # window restore from fullscreen state
-                    if self.window_in_fullscreen_state:
-                        if event.window == self.window_in_fullscreen_state[0]:
-                            if event.sequence_number == self.window_in_fullscreen_state[1]:
-                                continue
-                            if width == screen_width and height == screen_height:
-                                self.window_in_fullscreen_state = None
-                                continue
-                            #
-                            event.window.configure(x=x, y=y, width=width, height=height)
-                            DECO_WIN[event.window].map()
-                            DECO_WIN[event.window].raise_window()
-                            event.window.raise_window()
-                            self.refresh_title(event.window, DECO_WIN[event.window])
-                            # self.window_in_fullscreen_state = None
-                            continue
                     # fullscreen
                     if width == screen_width and height == screen_height:
-                        # skip unwanted request - mpv hack?
-                        if self.window_in_fullscreen_state:
-                            if event.window == self.window_in_fullscreen_state[0]:
-                                continue
-                        #######
-                        DECO_WIN[event.window].unmap()
-                        event.window.raise_window()
                         event.window.configure(x=0, y=0, width=width, height=height)
-                        self.window_in_fullscreen_state = [event.window, event.sequence_number]
-                        continue
                     else:
                         #
                         event.window.configure(x=x, y=y, width=width, height=height)
@@ -655,12 +622,11 @@ class xwm:
                         if event.window in DECO_WIN:
                             DECO_WIN[event.window].configure(x=x-BORDER_WIDTH, y=y-TITLE_HEIGHT, 
                                 width=width+BORDER_WIDTH*2, height=height+TITLE_HEIGHT+BORDER_WIDTH)
-                            # write the window title
+                            # 
                             self.refresh_title(event.window, DECO_WIN[event.window])
                 
             #
             elif event.type == X.Expose:
-                # event.window is deco - or dock - or menu
                 if event.window == self._m:
                     continue
                 #
@@ -680,28 +646,8 @@ class xwm:
                 
             #
             elif event.type == X.ClientMessage:
-                if event.client_type == self.NET_WM_STATE:
-                    fmt, data = event.data
-                    #
-                    if fmt == 32 and data[1] == self.WM_FULLSCREEN:
-                        if data[0] == 1:
-                            if not self.window_in_fullscreen_state_CM:
-                                DECO_WIN[event.window].unmap()
-                                event.window.raise_window()
-                                self.window_in_fullscreen_state_CM = [event.window, event.window.get_geometry()]
-                                event.window.configure(x=0, y=0, width=screen_width, height=screen_height)
-                                # self.window_in_fullscreen_state = None
-                        elif data[0] == 0:
-                            if self.window_in_fullscreen_state_CM:
-                                if event.window == self.window_in_fullscreen_state_CM[0]:
-                                    geom = self.window_in_fullscreen_state_CM[1]
-                                    event.window.configure(x=geom.x, y=geom.y, width=geom.width, height=geom.height)
-                                    DECO_WIN[event.window].map()
-                                    DECO_WIN[event.window].raise_window()
-                                    event.window.raise_window()
-                                    self.refresh_title(event.window, DECO_WIN[event.window])
-                                    self.window_in_fullscreen_state_CM = None
-                                    # self.window_in_fullscreen_state = None
+                pass
+            
             #
             elif event.type == X.MotionNotify:
                 x = event.root_x
@@ -722,6 +668,7 @@ class xwm:
                                     # width and height
                                     deco.configure(width=ww, height=hh)
                                     child.configure(width=ww-BORDER_WIDTH*2, height=hh-BORDER_WIDTH-TITLE_HEIGHT)
+                                    #
                                     # refresh the title
                                     self.refresh_title(child, deco)
                                 break
@@ -780,14 +727,13 @@ class xwm:
                             continue
                         #
                         self.mouse_button_left = 1
-                        # event.child is the decoration
                         geom = event.child.get_geometry()
                         cx = geom.x
                         cy = geom.y
                         x = event.root_x
                         y = event.root_y
                         self.delta_drag_start_point = (x - cx, y - cy)
-                        #### resize window
+                        # resize
                         # right bottom
                         if cx+geom.width-8 < x < cx+geom.width and cy+geom.height-8 < y < cy+geom.height:
                             self.mouse_button_resize_window = 1
@@ -799,7 +745,6 @@ class xwm:
                                 True, X.PointerMotionMask | X.ButtonReleaseMask, X.GrabModeAsync,
                                 X.GrabModeAsync, X.NONE, X.NONE, 0)
                         # 
-                        # find and set the active window
                         if active_window:
                             if active_window in DECO_WIN:
                                 if DECO_WIN[active_window] == event.child:
@@ -813,7 +758,6 @@ class xwm:
                                         active_window = win
                                         active_deco = DECO_WIN[win]
                                         active_deco.change_attributes(event_mask=mask_deco)
-                                        # refresh the title
                                         self.refresh_title(win, event.child)
                                         # 
                                         all_windows_stack.remove(win)
@@ -827,9 +771,8 @@ class xwm:
                                 active_window = win
                     
                     else:
-                        # on root
+                        # in root
                         pass
-                #
                 # right button
                 elif event.detail == 3:
                     if event.child == 0:
@@ -864,7 +807,7 @@ class xwm:
                                     self.refresh_title(win, deco)
                                     #
                                     active_window = win
-                            #
+                                
                             else:
                                 self._dock.raise_window()
                                 active_window = None
@@ -895,8 +838,8 @@ class xwm:
                             self.window_maximized = 1
                             self.maximize_window(event.child)
                         #
-                        # elif cx+geom.width-BUTTON_SIZE*3-10 < x < cx+geom.width-8 and cy+int((TITLE_HEIGHT-BUTTON_SIZE)/2+1) < y < cy+int((TITLE_HEIGHT-BUTTON_SIZE)/2+1)+BUTTON_SIZE:
-                            # pass
+                        elif cx+geom.width-BUTTON_SIZE*3-10 < x < cx+geom.width-8 and cy+int((TITLE_HEIGHT-BUTTON_SIZE)/2+1) < y < cy+int((TITLE_HEIGHT-BUTTON_SIZE)/2+1)+BUTTON_SIZE:
+                            pass
                     #
                     if self.mouse_button_resize_window:
                         root_cursor_normal()
@@ -935,7 +878,7 @@ class xwm:
                 break
         else:
             print("exiting from loop...")
-
+    
     def prog_exit(self):
         global _is_running
         _is_running = 0
