@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# 20221127_01
+
 import os
 import subprocess
 import sys
@@ -55,6 +57,15 @@ BUTTON_MINIMIZE_COLOR = 'DarkOrange4'
 mini_color = colormap.alloc_named_color(BUTTON_MINIMIZE_COLOR).pixel
 
 dock_border_color = colormap.alloc_named_color('DarkGreen').pixel
+dock_border_color_min = colormap.alloc_named_color('gray80').pixel
+
+# Alt modifier code
+ALT_KEY = 64
+
+_SCREENSHOT = 1
+if _SCREENSHOT:
+    # stamp key code
+    STAMP_KEY = 107
 
 # windows with decoration: window:decoration
 DECO_WIN = {}
@@ -129,10 +140,27 @@ else:
     mask_deco = X.EnterWindowMask | X.LeaveWindowMask
 
 
+if _SCREENSHOT:
+    
+    try:
+        from PIL import Image
+    except:
+        _SCREENSHOT = 0
+    
+    def take_screenshot(x,y,w,h):
+        root = _display.screen().root
+        raw = root.get_image(x, y, w, h, X.ZPixmap, 0xffffffff)
+        if isinstance(raw.data,str):
+            bytes=raw.data.encode()
+        else:
+            bytes=raw.data
+        image = Image.frombytes("RGB", (w, h), bytes, "raw", "BGRX")
+        image.save(os.path.join(os.path.expanduser('~'), "screenshot_{}.png".format( time.ctime(time.time()) )))
+
 ###################
 
 
-class xwm:
+class x_wm:
     
     def __init__(self):
         #
@@ -152,6 +180,22 @@ class xwm:
                 | X.KeyPressMask | X.KeyReleaseMask)
         
         self.root.change_attributes(event_mask=mask)
+        #
+        # grab alt key globally
+        self._is_alt = 1
+        def _alt_key():
+            self._is_alt = 0
+        
+        self.root.grab_key(ALT_KEY,
+            X.AnyModifier, 1, X.GrabModeAsync, X.GrabModeAsync, onerror=_alt_key)
+        
+        # grab stamp key globally
+        if _SCREENSHOT:
+            self.root.grab_key(STAMP_KEY,
+                X.Mod1Mask, 1, X.GrabModeAsync, X.GrabModeAsync)
+        
+        # the window that grabbed button 1
+        self.window_button1_grab = None
         #
         # window move event
         self.mouse_button_left = 0
@@ -738,15 +782,26 @@ class xwm:
                                 break
                     # window drag action
                     else:
-                        for child, deco in DECO_WIN.items():
-                            if deco == event.window:
-                                deco.configure(x=x - self.delta_drag_start_point[0], y=y - self.delta_drag_start_point[1])
-                                child.configure(x=x - self.delta_drag_start_point[0]+BORDER_WIDTH, y=y - self.delta_drag_start_point[1] + TITLE_HEIGHT)
-                                # refresh the title
-                                self.refresh_title(child, deco)
-                                break
+                        if active_window:
+                            win = active_window
+                            deco = DECO_WIN[active_window]
+                            deco.configure(x=x - self.delta_drag_start_point[0], y=y - self.delta_drag_start_point[1])
+                            win.configure(x=x - self.delta_drag_start_point[0]+BORDER_WIDTH, y=y - self.delta_drag_start_point[1] + TITLE_HEIGHT)
+                            # refresh the title
+                            self.refresh_title(win, deco)
+            
             # 
             elif event.type == X.ButtonPress:
+                #
+                if self.window_button1_grab:
+                    geom = DECO_WIN[self.window_button1_grab].get_geometry()
+                    cx = geom.x
+                    cy = geom.y
+                    x = event.root_x
+                    y = event.root_y
+                    self.delta_drag_start_point = (x - cx, y - cy)
+                    continue
+                #
                 # left mouse button
                 if event.detail == 1:
                     # event.child is the deco or dock
@@ -936,10 +991,32 @@ class xwm:
             
             #
             elif event.type == X.KeyPress:
-                pass
+                if event.detail == ALT_KEY:
+                    if self._is_alt:
+                        if active_window:
+                            if event.child == active_window:
+                                _can_drag = 1
+                                def _on_error(data):
+                                    _can_drag = 0
+                                event.child.change_attributes(event_mask=X.PointerMotionMask | X.ButtonPressMask | X.ButtonReleaseMask)
+                                event.child.grab_button(1, X.AnyModifier, True,
+                                    X.ButtonPressMask, X.GrabModeAsync,
+                                    X.GrabModeAsync, X.NONE, X.NONE, onerror=_on_error)
+                                if _can_drag:
+                                    # event.child is the program
+                                    self.window_button1_grab = event.child
+                                    self.mouse_button_left = 1
+                # screen shot
+                elif event.detail == STAMP_KEY:
+                    if _SCREENSHOT:
+                        take_screenshot(0,0,screen_width,screen_height)
             
             elif event.type == X.KeyRelease:
-                pass
+                if self.window_button1_grab:
+                    if event.child == self.window_button1_grab:
+                        self.window_button1_grab.ungrab_button(1, X.AnyModifier)
+                    self.window_button1_grab = None
+                    self.mouse_button_left = 0
             
             #
             if not _is_running:
@@ -952,10 +1029,11 @@ class xwm:
         global _is_running
         _is_running = 0
         sys.exit(0)
+        
+    
 
-            
 ##############
 
-xwm()
+x_wm()
     
     
