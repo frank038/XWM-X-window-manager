@@ -11,6 +11,7 @@ Requires:
 - xterm
 - xfonts (font lucida is used)
 - python3-pil (optional - for screenshot)
+
 Very minimal:
 - close button (the red one)
 - maximize button (the green one)
