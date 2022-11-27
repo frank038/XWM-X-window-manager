@@ -1,5 +1,5 @@
 # XWM X-window-manager
-A simple stacking window manager written in python end xlib.
+A simple stacking (floating) window manager written in python end xlib.
 
 Free to use or modify
 
