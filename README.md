@@ -10,7 +10,7 @@ Requires:
 - xdotool
 - xterm
 - xfonts (font lucida is used)
-- python3-pil (optional - for screenshot)
+- python3-pil (optional - for screenshot); the screenshot will be saved in the user home dir.
 
 Very minimal:
 - close button (the red one)
