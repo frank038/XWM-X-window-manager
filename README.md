@@ -1,5 +1,5 @@
 # XWM X-window-manager
-A simple stacking (floating) window manager written in python end xlib.
+A simple stacking (floating) window manager written in python and xlib.
 
 Free to use or modify
 
@@ -10,7 +10,7 @@ Requires:
 - xdotool
 - xterm
 - xfonts (font lucida is used)
-- python3-pil (optional - for screenshot)
+- python3-pil (optional - for screenshots)
 
 Very minimal:
 - close button (the red one)
