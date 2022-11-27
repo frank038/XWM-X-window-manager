@@ -10,6 +10,7 @@ Requires:
 - xdotool
 - xterm
 - xfonts (font lucida is used)
+- python3-pil (optional - for screenshot)
 
 Very minimal:
 - close button (the red one)
@@ -28,7 +29,11 @@ Because this wm is minimal, many things are left out, and maybe never will be im
 
 Not any other docks can interoperate with the wm.
 
-No keybindings. No virtual desktops.
+Keybindings:
+- alt+LMB to move the window;
+- alt+STAMP to get the screenshot of the whole screen (python3-pil is required).
+
+No virtual desktops.
 
 To test this wm:
 - from a terminal: Xephyr :1 -screen 1366x768
