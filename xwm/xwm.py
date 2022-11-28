@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# 20221127_01
+# 20221128_01
 
 import os
 import subprocess
@@ -67,6 +67,12 @@ if _SCREENSHOT:
     # stamp key code
     STAMP_KEY = 107
 
+# dock key
+DOCK_KEY = "d"
+
+# menu key
+MENU_KEY = "m"
+
 # windows with decoration: window:decoration
 DECO_WIN = {}
 
@@ -80,7 +86,7 @@ all_windows_stack = []
 # the program not the wm
 active_window = None
 
-# windows in maximized state: decoration:[window, prev_win_x, prev_win_y, win_unmaximized_width, win_unmaximized_height]
+# windows in maximized state: window:[prev_win_x, prev_win_y, win_unmaximized_width, win_unmaximized_height]
 MAXIMIZED_WINDOWS = {}
 
 WINDOW_WITH_DECO = [
@@ -89,8 +95,6 @@ WINDOW_WITH_DECO = [
 "_NET_WM_WINDOW_TYPE_NORMAL"]
 
 WINDOW_WITH_NO_DECO = [
-'_NET_WM_WINDOW_TYPE_DOCK',
-'_NET_WM_WINDOW_TYPE_DESKTOP',
 '_NET_WM_WINDOW_TYPE_TOOLBAR',
 '_NET_WM_WINDOW_TYPE_MENU',
 '_NET_WM_WINDOW_TYPE_DND',
@@ -99,6 +103,8 @@ WINDOW_WITH_NO_DECO = [
 '_NET_WM_WINDOW_TYPE_POPUP_MENU']
 
 WINDOWS_MAPPED_WITH_NO_DECO = [
+'_NET_WM_WINDOW_TYPE_DOCK',
+'_NET_WM_WINDOW_TYPE_DESKTOP',
 '_NET_WM_WINDOW_TYPE_SPLASH',
 '_NET_WM_WINDOW_TYPE_NOTIFICATION']
 
@@ -173,11 +179,15 @@ class x_wm:
         self.NET_WM_NAME = self.display.intern_atom('_NET_WM_NAME')
         self.WM_NAME = self.display.intern_atom('WM_NAME')
         self.WM_FULLSCREEN = self.display.intern_atom("_NET_WM_STATE_FULLSCREEN")
+        self.WM_MAXIMIZED_HORZ = self.display.intern_atom("_NET_WM_STATE_MAXIMIZED_HORZ")
+        self.WM_MAXIMIZED_VERT = self.display.intern_atom("_NET_WM_STATE_MAXIMIZED_VERT")
+        self.WM_HIDDEN = self.display.intern_atom("_NET_WM_STATE_HIDDEN")
         #
         mask = (X.SubstructureRedirectMask | X.SubstructureNotifyMask
                 | X.EnterWindowMask | X.LeaveWindowMask | X.FocusChangeMask
                 | X.ButtonPressMask | X.ButtonReleaseMask 
                 | X.KeyPressMask | X.KeyReleaseMask)
+               # | X.PropertyChangeMask)
         
         self.root.change_attributes(event_mask=mask)
         #
@@ -193,6 +203,10 @@ class x_wm:
         if _SCREENSHOT:
             self.root.grab_key(STAMP_KEY,
                 X.Mod1Mask, 1, X.GrabModeAsync, X.GrabModeAsync)
+        
+        # dock
+        self.root.grab_key(self.display.keysym_to_keycode(XK.string_to_keysym(DOCK_KEY)),
+            X.Mod1Mask, 1, X.GrabModeAsync, X.GrabModeAsync)
         
         # the window that grabbed button 1
         self.window_button1_grab = None
@@ -214,6 +228,8 @@ class x_wm:
         self.window_in_fullscreen_state = []
         self.window_in_fullscreen_state_CM = []
         #
+        self.close_btn_pressed = 0
+        self.maxi_btn_pressed = 0
         # create the wm dock
         self._dock = None
         if _create_dock:
@@ -277,6 +293,7 @@ class x_wm:
         except:
             pass
     
+    # 
     def on_dock_items(self):
         if not _create_dock:
             return
@@ -295,16 +312,25 @@ class x_wm:
             self._dock.configure(width=dock_width, height=self.dock_height)
         #
         font = self.display.open_font(TITLE_FONT)
-        self.on_dock_items_f(len_items, self.dock_items)
+        self.on_dock_items_f(None, self.dock_items)
     
     def on_dock_items_f(self, len_items, temp_list):
+        d_geom = self._dock.get_geometry()
+        # clean everything
+        if d_geom.height > dock_height:
+            self._dock.clear_area(0, dock_height, dock_width, screen_height)
         font = self.display.open_font(TITLE_FONT)
         item_gc = self._dock.create_gc(font=font, foreground=dock_border_color, line_width=1)
         i = 0
         for k,v in temp_list.items():
             item_name = self.get_window_class(k)
             self._dock.draw_text(item_gc, 8, int(4+dock_height+i*50+17+11), item_name)
-            self._dock.rectangle(item_gc, 4, 4+dock_height+i*50, dock_width-9, 50-9)
+            if v[0] == 0:
+                self._dock.rectangle(item_gc, 4, 4+dock_height+i*50, dock_width-9, 50-9)
+            elif v[0] == 1:
+                item_gc.change(foreground=dock_border_color_min)
+                self._dock.rectangle(item_gc, 4, 4+dock_height+i*50, dock_width-9, 50-9)
+                item_gc.change(foreground=dock_border_color)
             self.dock_items[k] = [v[0], i]
             i += 1
     
@@ -432,6 +458,7 @@ class x_wm:
         title_gc = deco.create_gc(font=font, foreground=self.screen.black_pixel)
         # title text
         geom = deco.get_geometry()
+        # 
         deco.clear_area(BORDER_WIDTH, 0, geom.width, TITLE_HEIGHT)
         #
         pos_x = BORDER_WIDTH+2
@@ -442,7 +469,7 @@ class x_wm:
         self.draw_btn(deco, geom.width-BUTTON_SIZE*2-10, int((TITLE_HEIGHT-BUTTON_SIZE)/2-1), "maxi")
         # self.draw_btn(deco, geom.width-BUTTON_SIZE*3-10, int((TITLE_HEIGHT-BUTTON_SIZE)/2-1), "mini")
         
-    # draw a circle
+    # draw the titlebar buttons
     def draw_btn(self, deco, x, y, type):
         if type == "close":
             btn_gc = deco.create_gc(foreground=close_color)
@@ -452,10 +479,10 @@ class x_wm:
             btn_gc = deco.create_gc(foreground=maxi_color)
             # deco.fill_arc(btn_gc, x, y, BUTTON_SIZE, BUTTON_SIZE, 0, 360 * 64)
             deco.fill_rectangle(btn_gc, x, y, BUTTON_SIZE, BUTTON_SIZE)
-        elif type == "mini":
-            btn_gc = deco.create_gc(foreground=mini_color)
-            # deco.fill_arc(btn_gc, x, y, BUTTON_SIZE, BUTTON_SIZE, 0, 360 * 64)
-            deco.fill_rectangle(btn_gc, x, y, BUTTON_SIZE, BUTTON_SIZE)
+        # elif type == "mini":
+            # btn_gc = deco.create_gc(foreground=mini_color)
+            # # deco.fill_arc(btn_gc, x, y, BUTTON_SIZE, BUTTON_SIZE, 0, 360 * 64)
+            # deco.fill_rectangle(btn_gc, x, y, BUTTON_SIZE, BUTTON_SIZE)
     
     # close window
     def close_window(self, win):
@@ -470,7 +497,7 @@ class x_wm:
                 # os.kill(winPid[0], 15)
                 os.kill(winPid, 15)
             except:
-                pass
+                return
         else:
             try:
                 ret = os.system("xdotool windowclose {}".format(win.id))
@@ -479,7 +506,10 @@ class x_wm:
                     if ret != 0:
                         return
             except:
-                pass
+                return
+        #
+        if win in MAXIMIZED_WINDOWS:
+            del MAXIMIZED_WINDOWS[win]
     
     # maximize the window
     def maximize_window(self, deco):
@@ -487,7 +517,7 @@ class x_wm:
         #
         if not win in MAXIMIZED_WINDOWS:
             wgeom = win.get_geometry()
-            MAXIMIZED_WINDOWS[win] = [win, wgeom.x, wgeom.y, wgeom.width, wgeom.height]
+            MAXIMIZED_WINDOWS[win] = [wgeom.x, wgeom.y, wgeom.width, wgeom.height]
             #
             x = start_x
             y = start_y
@@ -501,11 +531,10 @@ class x_wm:
             self.refresh_title(win, deco)
         else:
             data = MAXIMIZED_WINDOWS[win]
-            win = data[0]
-            x = data[1]
-            y = data[2]
-            width = data[3]
-            height = data[4]
+            x = data[0]
+            y = data[1]
+            width = data[2]
+            height = data[3]
             #
             deco.configure(x=x-BORDER_WIDTH-1,y=y-TITLE_HEIGHT-1,
                 width=width+BORDER_WIDTH*2, height=height+TITLE_HEIGHT+BORDER_WIDTH)
@@ -544,9 +573,9 @@ class x_wm:
         global active_window
         #
         while _is_running:
-            
+            #
             event = self.root.display.next_event()
-            
+            #
             if event.type == X.MapNotify:
                 attrs = event.window.get_attributes()
                 if attrs is None:
@@ -583,6 +612,7 @@ class x_wm:
                     self.dock_items[event.window] = [0]
                     self.on_dock_items()
                 #
+                # event.window.change_attributes(event_mask=X.PropertyChangeMask)
                 # set the active window
                 if event.window in DECO_WIN:
                     active_window = event.window
@@ -604,6 +634,10 @@ class x_wm:
                 #
                 if event.window in DECO_WIN:
                     continue
+                # remove the border from the program
+                event.window.change_attributes(
+                         border_pixel=win_color,
+                         border_width=0)
                 # center the window
                 win_geom = event.window.get_geometry()
                 x = int((screen_width-win_geom.width)/2)
@@ -731,7 +765,14 @@ class x_wm:
                 pass
                 
             #
+            elif event.type == X.PropertyNotify:
+                # window and atom
+                if event.atom in [self.WM_NAME, self.NET_WM_NAME]:
+                    wname = self.get_window_name(event.window)
+            
+            #
             elif event.type == X.ClientMessage:
+                #
                 if event.client_type == self.NET_WM_STATE:
                     fmt, data = event.data
                     #
@@ -756,6 +797,15 @@ class x_wm:
                                     self.refresh_title(event.window, DECO_WIN[event.window])
                                     self.window_in_fullscreen_state_CM = []
                                     # self.window_in_fullscreen_state = []
+                    # maximize
+                    if fmt == 32 and data[1] == self.WM_MAXIMIZED_VERT and data[2] == self.WM_MAXIMIZED_HORZ:
+                        if data[0] == 1:
+                            if event.window in DECO_WIN:
+                                self.maximize_window(DECO_WIN[event.window])
+                    # minimize
+                    if fmt == 32 and data[1] == self.WM_HIDDEN:
+                        if data[0]:
+                            pass
             
             #
             elif event.type == X.MotionNotify:
@@ -783,8 +833,25 @@ class x_wm:
                     # window drag action
                     else:
                         if active_window:
+                            if self.close_btn_pressed or self.maxi_btn_pressed:
+                                continue
+                            #
                             win = active_window
                             deco = DECO_WIN[active_window]
+                            # unmaximize first
+                            xx = 0
+                            if win in MAXIMIZED_WINDOWS:
+                                if (y - self.delta_drag_start_point[1]) > 3:
+                                    data = MAXIMIZED_WINDOWS[win]
+                                    yy = start_y + int(TITLE_HEIGHT/2)
+                                    MAXIMIZED_WINDOWS[win] = [x-data[2], (y - self.delta_drag_start_point[1]+yy), data[2], data[3]]
+                                    self.maximize_window(deco)
+                                    xx = x-int(data[2]/2)
+                                    deco.configure(x=xx)
+                                    win.configure(x=xx+BORDER_WIDTH)
+                                    self.refresh_title(win, deco)
+                                    self.delta_drag_start_point = [x-xx, yy]
+                            #
                             deco.configure(x=x - self.delta_drag_start_point[0], y=y - self.delta_drag_start_point[1])
                             win.configure(x=x - self.delta_drag_start_point[0]+BORDER_WIDTH, y=y - self.delta_drag_start_point[1] + TITLE_HEIGHT)
                             # refresh the title
@@ -809,14 +876,15 @@ class x_wm:
                         if event.child == self._dock:
                             geom = event.child.get_geometry()
                             py = event.root_y
+                            # items in the dock
                             if py > dock_height:
                                 n_item = int((event.root_y-dock_height)/50)
                                 win = None
                                 _v = None
+                                # bring the program to top if minimized
                                 for k,v in self.dock_items.items():
                                     if v[1] == n_item:
                                         win = k
-                                        # bring to top if minimized
                                         _v = v
                                         break
                                 #
@@ -828,10 +896,11 @@ class x_wm:
                                     win.raise_window()
                                     self.refresh_title(win, DECO_WIN[win])
                                     self.dock_items[win] = [0, _v[1]]
+                                    self.on_dock_items_f(None, self.dock_items)
                                     active_window = win
                                     #
                                     continue
-                                #
+                                #########
                                 if active_window == win:
                                     continue
                                 else:
@@ -853,6 +922,13 @@ class x_wm:
                         x = event.root_x
                         y = event.root_y
                         self.delta_drag_start_point = (x - cx, y - cy)
+                        #
+                        # close button
+                        if cx+geom.width-8-BUTTON_SIZE < x < cx+geom.width-8 and cy+int((TITLE_HEIGHT-BUTTON_SIZE)/2+1) < y < cy+int((TITLE_HEIGHT-BUTTON_SIZE)/2+1)+BUTTON_SIZE:
+                            self.close_btn_pressed = 1
+                        # maximize button
+                        elif cx+geom.width-BUTTON_SIZE*2-10 < x < cx+geom.width-8 and cy+int((TITLE_HEIGHT-BUTTON_SIZE)/2+1) < y < cy+int((TITLE_HEIGHT-BUTTON_SIZE)/2+1)+BUTTON_SIZE:
+                            self.maxi_btn_pressed = 1
                         #### resize window
                         # right bottom
                         if cx+geom.width-8 < x < cx+geom.width and cy+geom.height-8 < y < cy+geom.height:
@@ -905,6 +981,7 @@ class x_wm:
                         if event.child == self._dock:
                             geom = event.child.get_geometry()
                             py = event.root_y
+                            # the items in the dock - minimize or restore
                             if py > dock_height:
                                 n_item = int((event.root_y-dock_height)/50)
                                 #
@@ -915,10 +992,13 @@ class x_wm:
                                         break
                                 #
                                 v = self.dock_items[win]
+                                # minimize
                                 if v[0] == 0:
                                     win.unmap()
                                     DECO_WIN[win].unmap()
                                     self.dock_items[win] = [1, v[1]]
+                                    self.on_dock_items_f(None, self.dock_items)
+                                # restore
                                 else:
                                     deco = DECO_WIN[win]
                                     deco.map()
@@ -926,11 +1006,12 @@ class x_wm:
                                     deco.raise_window()
                                     win.raise_window()
                                     self.dock_items[win] = [0, v[1]]
+                                    self.on_dock_items_f(None, self.dock_items)
                                     #
                                     self.refresh_title(win, deco)
                                     #
                                     active_window = win
-                            #
+                            # the dock
                             else:
                                 self._dock.raise_window()
                                 active_window = None
@@ -953,11 +1034,11 @@ class x_wm:
                         y = event.root_y
                         # 
                         # close button
-                        if cx+geom.width-8-BUTTON_SIZE < x < cx+geom.width-8 and cy+int((TITLE_HEIGHT-BUTTON_SIZE)/2+1) < y < cy+int((TITLE_HEIGHT-BUTTON_SIZE)/2+1)+BUTTON_SIZE:
+                        if self.close_btn_pressed:
                             win = self.find_win_of_deco(event.child)
                             self.close_window(win)
-                        #
-                        elif cx+geom.width-BUTTON_SIZE*2-10 < x < cx+geom.width-8 and cy+int((TITLE_HEIGHT-BUTTON_SIZE)/2+1) < y < cy+int((TITLE_HEIGHT-BUTTON_SIZE)/2+1)+BUTTON_SIZE:
+                        # maximize button
+                        elif self.maxi_btn_pressed:
                             self.window_maximized = 1
                             self.maximize_window(event.child)
                         #
@@ -972,6 +1053,9 @@ class x_wm:
                         self.window_maximized = 0
                     #
                     self.display.ungrab_pointer(X.CurrentTime)
+                    #
+                    self.close_btn_pressed = 0
+                    self.maxi_btn_pressed = 0
                 # right button
                 elif event.detail == 3:
                     if self._m:
@@ -984,10 +1068,6 @@ class x_wm:
                         #
                         self._m.destroy()
                         self._m = None
-            
-            #
-            elif event.type == X.PropertyNotify:
-                pass
             
             #
             elif event.type == X.KeyPress:
@@ -1010,7 +1090,21 @@ class x_wm:
                 elif event.detail == STAMP_KEY:
                     if _SCREENSHOT:
                         take_screenshot(0,0,screen_width,screen_height)
-            
+                # bring the dock to top
+                elif event.detail == self.display.keysym_to_keycode(XK.string_to_keysym(DOCK_KEY)):
+                    keycode = event.detail
+                    keysym = self.display.keycode_to_keysym(keycode, 0)
+                    char = XK.keysym_to_string(keysym)
+                    if char == DOCK_KEY and _create_dock:
+                        self._dock.raise_window()
+                        active_window = None
+                # # bring the menu to top
+                # elif event.detail == self.display.keysym_to_keycode(XK.string_to_keysym(MENU_KEY)):
+                    # keycode = event.detail
+                    # keysym = self.display.keycode_to_keysym(keycode, 0)
+                    # char = XK.keysym_to_string(keysym)
+                
+            #
             elif event.type == X.KeyRelease:
                 if self.window_button1_grab:
                     if event.child == self.window_button1_grab:
