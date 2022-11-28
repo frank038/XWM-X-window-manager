@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# 20221128_01
+# 20221128_02
 
 import os
 import subprocess
@@ -59,7 +59,7 @@ mini_color = colormap.alloc_named_color(BUTTON_MINIMIZE_COLOR).pixel
 dock_border_color = colormap.alloc_named_color('DarkGreen').pixel
 dock_border_color_min = colormap.alloc_named_color('gray80').pixel
 
-# Alt modifier code
+# Alt modifier code - 64 - 133
 ALT_KEY = 64
 
 _SCREENSHOT = 1
@@ -458,7 +458,6 @@ class x_wm:
         title_gc = deco.create_gc(font=font, foreground=self.screen.black_pixel)
         # title text
         geom = deco.get_geometry()
-        # 
         deco.clear_area(BORDER_WIDTH, 0, geom.width, TITLE_HEIGHT)
         #
         pos_x = BORDER_WIDTH+2
@@ -613,6 +612,7 @@ class x_wm:
                     self.on_dock_items()
                 #
                 # event.window.change_attributes(event_mask=X.PropertyChangeMask)
+                #
                 # set the active window
                 if event.window in DECO_WIN:
                     active_window = event.window
@@ -838,9 +838,13 @@ class x_wm:
                             #
                             win = active_window
                             deco = DECO_WIN[active_window]
-                            # unmaximize first
+                            #### unmaximize first
+                            #
                             xx = 0
                             if win in MAXIMIZED_WINDOWS:
+                                # skip if not the titlebar
+                                if y > (start_y + TITLE_HEIGHT):
+                                    continue
                                 if (y - self.delta_drag_start_point[1]) > 3:
                                     data = MAXIMIZED_WINDOWS[win]
                                     yy = start_y + int(TITLE_HEIGHT/2)
@@ -851,6 +855,9 @@ class x_wm:
                                     win.configure(x=xx+BORDER_WIDTH)
                                     self.refresh_title(win, deco)
                                     self.delta_drag_start_point = [x-xx, yy]
+                            #
+                            if not self.delta_drag_start_point:
+                                continue
                             #
                             deco.configure(x=x - self.delta_drag_start_point[0], y=y - self.delta_drag_start_point[1])
                             win.configure(x=x - self.delta_drag_start_point[0]+BORDER_WIDTH, y=y - self.delta_drag_start_point[1] + TITLE_HEIGHT)
@@ -914,6 +921,7 @@ class x_wm:
                             #
                             continue
                         #
+                        # the programs
                         self.mouse_button_left = 1
                         # event.child is the decoration
                         geom = event.child.get_geometry()
@@ -1016,10 +1024,10 @@ class x_wm:
                                 self._dock.raise_window()
                                 active_window = None
             
-            
             #
             elif event.type == X.ButtonRelease:
                 if event.detail == 1:
+                    self.window_button1_grab = None
                     self.mouse_button_left = 0
                     self.delta_drag_start_point = None
                     #
@@ -1098,7 +1106,7 @@ class x_wm:
                     if char == DOCK_KEY and _create_dock:
                         self._dock.raise_window()
                         active_window = None
-                # # bring the menu to top
+                # # bring up the menu
                 # elif event.detail == self.display.keysym_to_keycode(XK.string_to_keysym(MENU_KEY)):
                     # keycode = event.detail
                     # keysym = self.display.keycode_to_keysym(keycode, 0)
@@ -1106,11 +1114,12 @@ class x_wm:
                 
             #
             elif event.type == X.KeyRelease:
-                if self.window_button1_grab:
-                    if event.child == self.window_button1_grab:
-                        self.window_button1_grab.ungrab_button(1, X.AnyModifier)
-                    self.window_button1_grab = None
-                    self.mouse_button_left = 0
+                if event.detail == ALT_KEY:
+                    if self.window_button1_grab:
+                        if event.child == self.window_button1_grab:
+                            self.window_button1_grab.ungrab_button(1, X.AnyModifier)
+                            self.window_button1_grab = None
+                            self.mouse_button_left = 0
             
             #
             if not _is_running:
