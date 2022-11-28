@@ -31,6 +31,7 @@ Not any other docks can interoperate with the wm.
 
 Keybindings:
 - alt+LMB to move the window;
+- alt+d to bring up the dock;
 - alt+STAMP to get the screenshot of the whole screen (python3-pil is required); the screenshot will be saved in the user home dir.
 
 No virtual desktops.
