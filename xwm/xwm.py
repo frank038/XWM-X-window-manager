@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# 20221128_02
+# 20221214_01
 
 import os
 import subprocess
@@ -730,7 +730,8 @@ class x_wm:
                             if event.window == self.window_in_fullscreen_state[0]:
                                 continue
                         #######
-                        DECO_WIN[event.window].unmap()
+                        if event.window in DECO_WIN:
+                            DECO_WIN[event.window].unmap()
                         event.window.raise_window()
                         event.window.configure(x=0, y=0, width=width, height=height)
                         self.window_in_fullscreen_state = [event.window, event.sequence_number]
@@ -868,12 +869,13 @@ class x_wm:
             elif event.type == X.ButtonPress:
                 #
                 if self.window_button1_grab:
-                    geom = DECO_WIN[self.window_button1_grab].get_geometry()
-                    cx = geom.x
-                    cy = geom.y
-                    x = event.root_x
-                    y = event.root_y
-                    self.delta_drag_start_point = (x - cx, y - cy)
+                    if self.window_button1_grab in DECO_WIN:
+                        geom = DECO_WIN[self.window_button1_grab].get_geometry()
+                        cx = geom.x
+                        cy = geom.y
+                        x = event.root_x
+                        y = event.root_y
+                        self.delta_drag_start_point = (x - cx, y - cy)
                     continue
                 #
                 # left mouse button
@@ -1086,7 +1088,8 @@ class x_wm:
                                 _can_drag = 1
                                 def _on_error(data):
                                     _can_drag = 0
-                                event.child.change_attributes(event_mask=X.PointerMotionMask | X.ButtonPressMask | X.ButtonReleaseMask)
+                                # event.child.change_attributes(event_mask=X.PointerMotionMask | X.ButtonPressMask | X.ButtonReleaseMask)
+                                event.child.change_attributes(event_mask=X.PointerMotionMask)
                                 event.child.grab_button(1, X.AnyModifier, True,
                                     X.ButtonPressMask, X.GrabModeAsync,
                                     X.GrabModeAsync, X.NONE, X.NONE, onerror=_on_error)
