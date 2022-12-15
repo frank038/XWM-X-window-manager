@@ -42,6 +42,6 @@ To test this wm:
 - launch the wm from that xterm
 - or just execute/use it as any wm.
 
-The newer version has more features.
+The newer version has more features and fixes.
 
 ![My image](https://github.com/frank038/XWM-X-window-manager-/blob/main/screenshot.png)
